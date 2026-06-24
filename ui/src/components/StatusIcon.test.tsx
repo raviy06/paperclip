@@ -12,8 +12,16 @@ vi.mock("../hooks/useConferenceRoomChatEnabled", () => ({
   useConferenceRoomChatEnabled: () => ({ enabled: conferenceRoomChatFlag.enabled, loaded: true }),
 }));
 
+// PAP-239 (3c): Task status icons flag. Seeded OFF so the suites above lock
+// today's ring; the flag-ON suite at the bottom flips it on.
+const taskStatusIconsFlag = vi.hoisted(() => ({ enabled: false }));
+vi.mock("../hooks/useTaskStatusIconsEnabled", () => ({
+  useTaskStatusIconsEnabled: () => ({ enabled: taskStatusIconsFlag.enabled, loaded: true }),
+}));
+
 afterEach(() => {
   conferenceRoomChatFlag.enabled = true;
+  taskStatusIconsFlag.enabled = false;
 });
 
 describe("StatusIcon — Conference Room Chat flag palettes (PAP-139)", () => {
@@ -148,5 +156,63 @@ describe("StatusIcon", () => {
     expect(html).toContain("border-amber-600");
     expect(html).not.toContain("border-cyan-600");
     expect(html).not.toContain("border-red-600");
+  });
+});
+
+describe("StatusIcon — Task status icons flag ON (PAP-239)", () => {
+  it("renders the unified StatusGlyph instead of the bespoke ring", () => {
+    taskStatusIconsFlag.enabled = true;
+    const html = renderToStaticMarkup(<StatusIcon status="in_progress" />);
+    expect(html).toContain('viewBox="0 0 24 24"');
+    // The legacy ring span (border-2 rounded-full) is gone.
+    expect(html).not.toContain("rounded-full border-2");
+  });
+
+  it("maps covered-blocked → In queue (blue glyph, no cyan corner dot)", () => {
+    taskStatusIconsFlag.enabled = true;
+    const html = renderToStaticMarkup(
+      <StatusIcon
+        status="blocked"
+        blockerAttention={{
+          state: "covered",
+          reason: "active_child",
+          unresolvedBlockerCount: 1,
+          coveredBlockerCount: 1,
+          attentionBlockerCount: 0,
+          stalledBlockerCount: 0,
+          sampleBlockerIdentifier: "PAP-9",
+          sampleStalledBlockerIdentifier: null,
+        }}
+      />,
+    );
+    // In queue uses the blocked shape recoloured via the blue in_queue icon var.
+    expect(html).toContain("var(--status-task-icon-in_queue)");
+    // Bespoke teal/cyan covered markers are retired.
+    expect(html).not.toContain("bg-cyan");
+    expect(html).not.toContain("border-cyan");
+    // Full blocked reason still rides on the accessible label.
+    expect(html).toContain("aria-label");
+  });
+
+  it("keeps the onChange picker working with the new glyph", () => {
+    taskStatusIconsFlag.enabled = true;
+    const html = renderToStaticMarkup(<StatusIcon status="todo" onChange={() => {}} />);
+    expect(html).toContain('viewBox="0 0 24 24"');
+  });
+});
+
+describe("StatusIcon — glyph size (PAP-243a)", () => {
+  it("forwards size=\"lg\" as a 20px glyph", () => {
+    taskStatusIconsFlag.enabled = true;
+    const html = renderToStaticMarkup(<StatusIcon status="todo" size="lg" />);
+    expect(html).toContain('width="20"');
+    expect(html).toContain('height="20"');
+  });
+
+  it("defaults to a 16px (md) glyph when size is omitted", () => {
+    taskStatusIconsFlag.enabled = true;
+    const html = renderToStaticMarkup(<StatusIcon status="todo" />);
+    expect(html).toContain('width="16"');
+    expect(html).toContain('height="16"');
   });
 });

@@ -70,6 +70,7 @@ import {
 } from "../components/IssueChatThread";
 import { IssueChatThreadClassic } from "../components/IssueChatThreadClassic";
 import { useConferenceRoomChatEnabled } from "../hooks/useConferenceRoomChatEnabled";
+import { useTaskStatusIconsEnabled } from "../hooks/useTaskStatusIconsEnabled";
 import { workModeMetaFor } from "../lib/work-mode-meta";
 import { IssueContinuationHandoff } from "../components/IssueContinuationHandoff";
 import { IssueAttachmentsSection } from "../components/IssueAttachmentsSection";
@@ -1711,6 +1712,11 @@ export function IssueDetail() {
     [comments, optimisticComments],
   );
   const breadcrumbTitle = issue?.title ?? issueId ?? "Task";
+  // PAP-234 (PAP-243b): the breadcrumb status glyph is part of the Task status
+  // icons feature — only prepend it when the flag is ON, so OFF = master.
+  const { enabled: breadcrumbStatusIconEnabled } = useTaskStatusIconsEnabled();
+  const breadcrumbStatus = breadcrumbStatusIconEnabled ? issue?.status : undefined;
+  const breadcrumbBlockerAttention = issue?.blockerAttention;
   const issueCacheRefs = useMemo(() => {
     const refs = new Set<string>();
     if (issueId) refs.add(issueId);
@@ -2796,7 +2802,17 @@ export function IssueDetail() {
   useEffect(() => {
     setBreadcrumbs([
       sourceBreadcrumb,
-      { label: hasLiveRuns ? `🔵 ${breadcrumbTitle}` : breadcrumbTitle },
+      {
+        label: hasLiveRuns ? `🔵 ${breadcrumbTitle}` : breadcrumbTitle,
+        // Prepend the task's status glyph (lg/20px) to the breadcrumb so the
+        // current task's state reads at a glance (PAP-243b board follow-up).
+        leading: breadcrumbStatus ? (
+          <StatusIcon status={breadcrumbStatus} size="lg" blockerAttention={breadcrumbBlockerAttention} />
+        ) : undefined,
+        leadingKey: breadcrumbStatus
+          ? `${breadcrumbStatus}:${breadcrumbBlockerAttention?.state ?? ""}`
+          : undefined,
+      },
     ]);
   }, [
     breadcrumbTitle,
@@ -2804,6 +2820,8 @@ export function IssueDetail() {
     setBreadcrumbs,
     sourceBreadcrumb.href,
     sourceBreadcrumb.label,
+    breadcrumbStatus,
+    breadcrumbBlockerAttention?.state,
   ]);
 
   const isFromInbox = resolvedIssueDetailState?.issueDetailSource === "inbox";
@@ -3627,6 +3645,7 @@ export function IssueDetail() {
         <div className="flex items-center gap-2 min-w-0 flex-wrap">
           <StatusIcon
             status={issue.status}
+            size="lg"
             blockerAttention={issue.blockerAttention}
             onChange={(status) => updateIssue.mutate({ status })}
           />

@@ -3,6 +3,8 @@ import type { IssueBlockerAttention } from "@paperclipai/shared";
 import { cn } from "../lib/utils";
 import { issueStatusIcon, issueStatusIconClassic, issueStatusIconDefault } from "../lib/status-colors";
 import { useConferenceRoomChatEnabled } from "../hooks/useConferenceRoomChatEnabled";
+import { useTaskStatusIconsEnabled } from "../hooks/useTaskStatusIconsEnabled";
+import { StatusGlyph, type StatusGlyphSize } from "./StatusGlyph";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 
@@ -18,6 +20,8 @@ interface StatusIconProps {
   onChange?: (status: string) => void;
   className?: string;
   showLabel?: boolean;
+  /** Glyph size when the Task status icons flag is ON (PAP-243a). Default `md`. */
+  size?: StatusGlyphSize;
 }
 
 function blockedAttentionLabel(blockerAttention: IssueBlockerAttention | null | undefined) {
@@ -62,11 +66,16 @@ function blockedAttentionLabel(blockerAttention: IssueBlockerAttention | null | 
   return "Blocked";
 }
 
-export function StatusIcon({ status, blockerAttention, onChange, className, showLabel }: StatusIconProps) {
+export function StatusIcon({ status, blockerAttention, onChange, className, showLabel, size = "md" }: StatusIconProps) {
   const [open, setOpen] = useState(false);
   // PAP-75 brand hues (todo → amber, in_progress → blue) ship behind the
   // Conference Room Chat flag (PAP-139); OFF keeps master's palette.
   const { enabled: conferenceRoomChatEnabled } = useConferenceRoomChatEnabled();
+  // PAP-239 (3c): when the Task status icons flag is ON, the bespoke ring is
+  // replaced by the unified `StatusGlyph` everywhere this component renders
+  // (list, kanban, detail, properties + picker, pills, inbox, quicklook, …).
+  // Flag OFF = today's ring, byte-for-byte.
+  const { enabled: taskStatusIconsEnabled } = useTaskStatusIconsEnabled();
   const statusIconPalette = conferenceRoomChatEnabled ? issueStatusIcon : issueStatusIconClassic;
   const isCoveredBlocked = status === "blocked" && blockerAttention?.state === "covered";
   const isStalledBlocked = status === "blocked" && blockerAttention?.state === "stalled";
@@ -87,7 +96,21 @@ export function StatusIcon({ status, blockerAttention, onChange, className, show
         ? "needs_attention"
         : undefined;
 
-  const circle = (
+  // PAP-239 (3c): unified glyph path. Map the old covered-blocked state →
+  // "In queue" (the blocked shape recoloured blue, no corner dot); the bespoke
+  // teal/cyan + amber-stalled markers are retired — shape + colour now carry
+  // the meaning. The full blocked reason still rides in `ariaLabel`.
+  const glyphStatus = status === "blocked" && isCoveredBlocked ? "in_queue" : status;
+  const glyph = (
+    <StatusGlyph
+      status={glyphStatus}
+      size={size}
+      className={cn(onChange && !showLabel && "cursor-pointer", className)}
+      title={ariaLabel}
+    />
+  );
+
+  const circle = taskStatusIconsEnabled ? glyph : (
     <span
       className={cn(
         "relative inline-flex h-4 w-4 rounded-full border-2 shrink-0",
@@ -138,7 +161,7 @@ export function StatusIcon({ status, blockerAttention, onChange, className, show
               setOpen(false);
             }}
           >
-            <StatusIcon status={s} />
+            <StatusIcon status={s} size="lg" />
             {statusLabel(s)}
           </Button>
         ))}

@@ -14,6 +14,7 @@ import { parseIssueReferenceFromHref, remarkLinkIssueReferences } from "../lib/i
 import { parseWorkspaceFileHref, remarkWorkspaceFileRefs, WORKSPACE_FILE_HREF_PREFIX } from "../lib/remark-workspace-file-refs";
 import { remarkSoftBreaks } from "../lib/remark-soft-breaks";
 import { StatusIcon } from "./StatusIcon";
+import { useTaskStatusIconsEnabled } from "../hooks/useTaskStatusIconsEnabled";
 import { WorkspaceFileLink } from "./WorkspaceFileLink";
 
 interface MarkdownBodyProps {
@@ -55,17 +56,27 @@ function MarkdownIssueLink({
   const title = data?.title ?? identifier;
   const status = data?.status;
   const issueLabel = title !== identifier ? `Issue ${identifier}: ${title}` : `Issue ${identifier}`;
+  // PAP-239 (3c): flag ON renders the boxless inline mention — the unified glyph
+  // (via StatusIcon) + a regular-weight underlined link. OFF = today's markup.
+  const { enabled: taskStatusIconsEnabled } = useTaskStatusIconsEnabled();
 
   return (
     <Link
       to={`/issues/${identifier}`}
       data-mention-kind="issue"
-      className="paperclip-markdown-issue-ref"
+      className={cn(
+        "paperclip-markdown-issue-ref",
+        taskStatusIconsEnabled && "font-normal underline"
+      )}
       title={title}
       aria-label={issueLabel}
     >
       {status ? (
-        <StatusIcon status={status} className="mr-1 h-3 w-3 align-[-0.125em]" />
+        taskStatusIconsEnabled ? (
+          <StatusIcon status={status} size="lg" className="relative -top-px mr-1 inline-block h-5 w-5 align-middle" />
+        ) : (
+          <StatusIcon status={status} className="mr-1 h-3 w-3 align-[-0.125em]" />
+        )
       ) : null}
       {children}
     </Link>

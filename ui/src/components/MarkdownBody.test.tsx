@@ -48,8 +48,17 @@ vi.mock("../context/CompanyContext", () => ({
   useOptionalCompany: mockUseOptionalCompany,
 }));
 
+// PAP-243a: the inline issue mention's status glyph renders at lg (20px / h-5 w-5)
+// when the Task status icons flag is ON. Seeded OFF so the rest of the suite keeps
+// today's markup; the flag-ON test flips it on.
+const taskStatusIconsFlag = vi.hoisted(() => ({ enabled: false }));
+vi.mock("../hooks/useTaskStatusIconsEnabled", () => ({
+  useTaskStatusIconsEnabled: () => ({ enabled: taskStatusIconsFlag.enabled, loaded: true }),
+}));
+
 afterEach(() => {
   mockUseOptionalCompany.mockReturnValue(null);
+  taskStatusIconsFlag.enabled = false;
 });
 
 function renderMarkdown(
@@ -542,6 +551,27 @@ describe("MarkdownBody", () => {
     ]);
 
     expect(html).toContain('href="/issues/JIRA-2"');
+  });
+
+  it("renders the inline mention status glyph at lg (20px / h-5 w-5) when the flag is ON", () => {
+    taskStatusIconsFlag.enabled = true;
+    const html = renderMarkdown("See PAP-1271 for context.", [
+      { identifier: "PAP-1271", status: "in_progress" },
+    ]);
+
+    // Unified glyph (flag ON) at 20px, with the h-5 w-5 class override so the
+    // Tailwind sizing matches the intrinsic SVG size.
+    expect(html).toContain('viewBox="0 0 24 24"');
+    expect(html).toContain('width="20"');
+    expect(html).toContain('height="20"');
+    expect(html).toContain("h-5");
+    expect(html).toContain("w-5");
+    // PAP-243b: the lg glyph is optically centered to the body text
+    // (vertical-align: middle + a 1px lift), not floating off the baseline.
+    expect(html).toContain("align-middle");
+    expect(html).not.toContain("align-[-0.125em]");
+    // Legacy h-3 w-3 sizing is gone.
+    expect(html).not.toContain("mr-1 h-3 w-3");
   });
 
   it("never gates explicit internal issue paths, even for unknown prefixes", () => {

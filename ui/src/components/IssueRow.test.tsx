@@ -6,6 +6,14 @@ import type { Issue } from "@paperclipai/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IssueRow } from "./IssueRow";
 
+// PAP-243a: status glyph renders at lg (20px) in the list when the Task status
+// icons flag is ON. Seeded OFF (legacy ring) so the suites above lock today's
+// markup; the flag-ON test at the bottom flips it on.
+const taskStatusIconsFlag = vi.hoisted(() => ({ enabled: false }));
+vi.mock("../hooks/useTaskStatusIconsEnabled", () => ({
+  useTaskStatusIconsEnabled: () => ({ enabled: taskStatusIconsFlag.enabled, loaded: true }),
+}));
+
 vi.mock("@/lib/router", () => ({
   Link: ({
     children,
@@ -82,6 +90,27 @@ describe("IssueRow", () => {
 
   afterEach(() => {
     container.remove();
+    taskStatusIconsFlag.enabled = false;
+  });
+
+  it("renders the list status glyph at lg (20px) when the Task status icons flag is ON", () => {
+    taskStatusIconsFlag.enabled = true;
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(<IssueRow issue={createIssue({ status: "in_progress" })} />);
+    });
+
+    const glyphs = container.querySelectorAll('svg[viewBox="0 0 24 24"]');
+    expect(glyphs.length).toBeGreaterThan(0);
+    glyphs.forEach((glyph) => {
+      expect(glyph.getAttribute("width")).toBe("20");
+      expect(glyph.getAttribute("height")).toBe("20");
+    });
+
+    act(() => {
+      root.unmount();
+    });
   });
 
   it("suppresses accent hover styling when the row is selected", () => {
