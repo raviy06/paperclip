@@ -50,6 +50,7 @@ export interface InstanceExperimentalSettings {
   enableStreamlinedLeftNavigation: boolean;
   enableConferenceRoomChat: boolean;
   enableTaskWatchdogs: boolean;
+  enableTaskStatusIcons: boolean;
   enableIssuePlanDecompositions: boolean;
   enableExperimentalFileViewer: boolean;
   enableCloudSync: boolean;

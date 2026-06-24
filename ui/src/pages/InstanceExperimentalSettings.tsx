@@ -242,6 +242,7 @@ export function InstanceExperimentalSettings() {
   const enableExperimentalFileViewer =
     experimentalQuery.data?.enableExperimentalFileViewer === true;
   const enableTaskWatchdogs = experimentalQuery.data?.enableTaskWatchdogs === true;
+  const enableTaskStatusIcons = experimentalQuery.data?.enableTaskStatusIcons === true;
   const enableCloudSync = experimentalQuery.data?.enableCloudSync === true;
   const autoRestartDevServerWhenIdle = experimentalQuery.data?.autoRestartDevServerWhenIdle === true;
   const enableIssueGraphLivenessAutoRecovery =
@@ -460,6 +461,28 @@ export function InstanceExperimentalSettings() {
             }
             disabled={toggleMutation.isPending}
             aria-label="Toggle task watchdogs experimental setting"
+          />
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1.5">
+            <h2 className="text-sm font-semibold">Task Status Icons</h2>
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Show distinct status icons for task states across the app. While off, task status presentation is
+              unchanged from today. Adoption of the new icons lands separately once this is enabled.
+            </p>
+          </div>
+          <ToggleSwitch
+            checked={enableTaskStatusIcons}
+            onCheckedChange={(checked) =>
+              toggleMutation.mutate({
+                enableTaskStatusIcons: checked,
+              })
+            }
+            disabled={toggleMutation.isPending}
+            aria-label="Toggle task status icons experimental setting"
           />
         </div>
       </section>

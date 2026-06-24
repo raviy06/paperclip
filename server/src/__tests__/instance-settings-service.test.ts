@@ -22,6 +22,7 @@ describe("instance settings service", () => {
       enableIssuePlanDecompositions: true,
       enableExperimentalFileViewer: true,
       enableTaskWatchdogs: true,
+      enableTaskStatusIcons: false,
       enableCloudSync: true,
       autoRestartDevServerWhenIdle: true,
       enableIssueGraphLivenessAutoRecovery: true,
@@ -44,6 +45,25 @@ describe("instance settings service", () => {
     expect(
       normalizeExperimentalSettings({ enableExperimentalFileViewer: true }).enableTaskWatchdogs,
     ).toBe(false);
+  });
+
+  it("defaults enableTaskStatusIcons to false for empty and legacy stored settings", () => {
+    expect(normalizeExperimentalSettings(undefined).enableTaskStatusIcons).toBe(false);
+    expect(normalizeExperimentalSettings({}).enableTaskStatusIcons).toBe(false);
+    // Rows persisted before the flag existed (PAP-237) must normalize to off.
+    expect(
+      normalizeExperimentalSettings({ enableExperimentalFileViewer: true }).enableTaskStatusIcons,
+    ).toBe(false);
+  });
+
+  it("round-trips an enableTaskStatusIcons patch through the update merge", () => {
+    const current = normalizeExperimentalSettings({});
+    const enabled = normalizeExperimentalSettings({ ...current, enableTaskStatusIcons: true });
+    expect(enabled.enableTaskStatusIcons).toBe(true);
+    expect(enabled.enableStreamlinedLeftNavigation).toBe(true);
+
+    const disabled = normalizeExperimentalSettings({ ...enabled, enableTaskStatusIcons: false });
+    expect(disabled).toEqual(current);
   });
 
   it("round-trips an enableConferenceRoomChat patch through the update merge", () => {

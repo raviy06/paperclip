@@ -44,6 +44,7 @@ export const instanceExperimentalSettingsSchema = z.object({
   enableStreamlinedLeftNavigation: z.boolean().default(true),
   enableConferenceRoomChat: z.boolean().default(false),
   enableTaskWatchdogs: z.boolean().default(false),
+  enableTaskStatusIcons: z.boolean().default(false),
   enableIssuePlanDecompositions: z.boolean().default(false),
   enableExperimentalFileViewer: z.boolean().default(false),
   enableCloudSync: z.boolean().default(false),

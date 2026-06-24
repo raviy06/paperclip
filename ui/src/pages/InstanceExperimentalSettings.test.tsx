@@ -44,6 +44,8 @@ const STREAMLINED_TOGGLE_SELECTOR =
   'button[aria-label="Toggle streamlined left navigation experimental setting"]';
 const TASK_WATCHDOGS_TOGGLE_SELECTOR =
   'button[aria-label="Toggle task watchdogs experimental setting"]';
+const TASK_STATUS_ICONS_TOGGLE_SELECTOR =
+  'button[aria-label="Toggle task status icons experimental setting"]';
 
 function defaultExperimentalSettings(): InstanceExperimentalSettingsPayload {
   return {
@@ -54,6 +56,7 @@ function defaultExperimentalSettings(): InstanceExperimentalSettingsPayload {
     enableIssuePlanDecompositions: false,
     enableExperimentalFileViewer: false,
     enableTaskWatchdogs: false,
+    enableTaskStatusIcons: false,
     enableCloudSync: false,
     autoRestartDevServerWhenIdle: false,
     enableIssueGraphLivenessAutoRecovery: false,
@@ -189,6 +192,46 @@ describe("InstanceExperimentalSettings — Conference Room Chat card (PAP-11233)
 
     expect(mockInstanceSettingsApi.updateExperimental).toHaveBeenLastCalledWith({
       enableTaskWatchdogs: false,
+    });
+  });
+
+  it("renders and patches the Task Status Icons experimental toggle on and off", async () => {
+    await renderPage();
+
+    expect(container.textContent).toContain("Task Status Icons");
+
+    const toggle = container.querySelector<HTMLButtonElement>(TASK_STATUS_ICONS_TOGGLE_SELECTOR);
+    expect(toggle?.getAttribute("aria-checked")).toBe("false");
+
+    await act(async () => {
+      toggle?.click();
+    });
+    await flushReact();
+
+    expect(mockInstanceSettingsApi.updateExperimental).toHaveBeenCalledWith({
+      enableTaskStatusIcons: true,
+    });
+    expect(toggle?.getAttribute("aria-checked")).toBe("true");
+
+    flushSync(() => {
+      root?.unmount();
+    });
+    root = null;
+    container.textContent = "";
+    await renderPage();
+
+    const enabledToggle = container.querySelector<HTMLButtonElement>(
+      TASK_STATUS_ICONS_TOGGLE_SELECTOR,
+    );
+    expect(enabledToggle?.getAttribute("aria-checked")).toBe("true");
+
+    await act(async () => {
+      enabledToggle?.click();
+    });
+    await flushReact();
+
+    expect(mockInstanceSettingsApi.updateExperimental).toHaveBeenLastCalledWith({
+      enableTaskStatusIcons: false,
     });
   });
 });
